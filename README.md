@@ -64,3 +64,42 @@ services:
 networks:
   default:
     driver: bridge
+````
+
+3.  Run the stack:
+    ```bash
+    docker-compose up -d
+    ```
+4.  Open **http://localhost:8085** in your browser.
+
+-----
+
+## 🏗️ Building from Source
+
+If you want to modify the code and build it yourself:
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone [https://github.com/megvadulthangya/ImageGoNord-Web.git](https://github.com/megvadulthangya/ImageGoNord-Web.git)
+    cd ImageGoNord-Web
+    ```
+
+2.  **Build and Run:**
+
+    ```bash
+    docker-compose up -d --build
+    ```
+
+## 📂 Project Structure
+
+  * `src/ign-frontend`: Vue.js frontend (Nginx).
+  * `src/ign-api`: Python Flask API (Gunicorn + RQ).
+  * `docker-compose.yml`: Main configuration file.
+
+## 🔗 Credits
+
+Based on the original work of [ImageGoNord](https://github.com/Schroedinger-Hat/ImageGoNord-Web).
+All original licenses apply.
+
+```
