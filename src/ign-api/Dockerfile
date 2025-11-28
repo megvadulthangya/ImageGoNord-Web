@@ -19,4 +19,4 @@ RUN touch /var/log/cron.log
 
 EXPOSE 8000
 
-CMD cron && /app/run-worker.sh && tail -f /var/log/cron.log & /usr/local/bin/gunicorn --workers 3 --timeout 300 -m 007 -b 0.0.0.0:8000 wsgi:app
+CMD cron && /app/run-worker.sh && tail -f /var/log/cron.log & /usr/local/bin/gunicorn --workers 1 --timeout 600 -m 007 -b 0.0.0.0:8000 wsgi:app

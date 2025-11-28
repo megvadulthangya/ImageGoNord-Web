@@ -381,10 +381,27 @@ export default Vue.component('Demo', {
   }
 }
 
+/* Sötét mód */
 .#{$dark-mode-class} {
-  .preview { background: $dark-bg-secondary; }
+  /* A külső doboz */
+  .preview { 
+    background: $dark-bg-secondary; 
+  }
+  
+  /* A belső szaggatott keret és a label */
+  .preview-wrapper, .preview-wrapper label {
+      border-color: $nord3 !important; /* Sötét szürke keret */
+      color: $nord4;
+  }
+  
+  /* A "Click or Drop" szöveg */
+  .preview-wrapper label::after {
+      color: $nord4;
+  }
+
   .actions .btn-success { color: white; }
   h3 { border-color: $nord2; color: $nord6; }
+  .palette-colors .color-box { border-color: #555; }
   .group-name { color: $nord4; }
+  .options span { color: $nord4; }
 }
-</style>

@@ -12,7 +12,7 @@
       <nav>
         <div class="navbar">
           <router-link to="/imagia">🤖 ImagIA</router-link>
-          <router-link to="/color-schemes">Palette</router-link>
+          <router-link to="/color-schemes">ImageGoWild</router-link>
           <router-link to="/wallpaper">Wallpaper</router-link>
           <router-link to="/documentation">Docs</router-link>
           <router-link to="/about">About</router-link>
