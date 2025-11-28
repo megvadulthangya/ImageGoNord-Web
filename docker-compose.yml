@@ -1,20 +1,33 @@
-version: '3.8'
-
 services:
-  api:
-    build: ./src/ign-api
-    container_name: api
-    environment:
-      - REDISTOGO_URL=redis://redis:6379/0
+  # 1. A FRONTEND (Ezt éred el a böngészőből)
+  ign-frontend:
+    build: ./src/ign-frontend
+    container_name: ign-frontend-custom
     ports:
-      - "8000:8000"
+      - "8085:80"  # A te géped 8085-ös portja -> Nginx 80-as portja
     depends_on:
-      - redis
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - "6379:6379"
+      - ign-api-custom
+    restart: unless-stopped
+
+  # 2. A BACKEND (API)
+  ign-api-custom:
+    build: ./src/ign-api
+    container_name: ign-api-custom
+    environment:
+      # Belső hálózaton éri el a Redist
+      - REDISTOGO_URL=redis://ign-redis-custom:6379/0 
+    # NEM kell ports: - "..." rész! 
+    # Az Nginx eléri belül a 8000-es porton, kívülről nem kell látni.
+    depends_on:
+      - ign-redis-custom
+    restart: unless-stopped
+
+  # 3. AZ ADATBÁZIS (Redis/Valkey)
+  ign-redis-custom:
+    image: valkey/valkey:alpine
+    container_name: ign-redis-custom
+    # Itt sem kell portot nyitni a külvilágra, csak az API használja.
+    restart: unless-stopped
 
 networks:
   default:

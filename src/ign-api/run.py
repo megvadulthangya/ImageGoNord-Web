@@ -16,7 +16,7 @@ API_VERSION = '/v1'
 API_VERSION_URL = '/' + API_VERSION
 
 app = Flask(__name__)
-CORS(app, resources={r"/v1/*": {"origins": "https://ign.schroedinger-hat.org"}})
+CORS(app, resources={r"/v1/*": {"origins": "*"}})
 app.config['UPLOAD_FOLDER'] = '/tmp'
 app.config['MAX_CONTENT_LENGTH'] = 128 * 1000 * 1000 # 128MB
 
