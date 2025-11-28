@@ -1,101 +1,77 @@
 <template>
   <div class="demo container">
     <div class="demo-wrapper">
-      <div class="preview">
-        <div class="preview-wrapper">
-          <Loader />
-          <input type="file" accept="image/*, video/*" id="file" @change="loadFile" style="display:none;">
-          <label for="file"></label>
+      
+      <div class="preview" :class="{ processing: isProcessing, highlight: isDragover }">
+        <div class="preview-wrapper" :class="{ uploaded: imgData !== null }">
+          
+          <Loader v-if="isProcessing" />
+          
+          <input type="file" accept="image/*" id="file" @change="loadFile" style="display:none;">
+          
+          <label for="file" v-if="imgData === null" 
+                 @dragover.prevent="isDragover = true" 
+                 @dragleave.prevent="isDragover = false"
+                 @drop.prevent="handleDrop">
+          </label>
+
           <canvas width="450" height="450" id="img-preview"></canvas>
         </div>
       </div>
+
       <div class="params">
+        
         <h3>Palette</h3>
-        <div class="palette" v-if="palette !== ''">
+        <div class="palette" v-if="palette && palette.name">
           <span>{{ palette.name }}</span>
-          <span v-for="color in palette.colors" :key="color" :data-hex="color" class="highlighted color-element nord0"></span>
-        </div>
-        <div class="palette" v-if="palette === ''">
-          <span>Polar Night</span>
-          <div class="polar">
-            <span data-hex="#2e3440" class="highlighted color-element nord0"></span>
-            <span data-hex="#3b4252" class="highlighted color-element nord1"></span>
-            <span data-hex="#434c5e" class="highlighted color-element nord2"></span>
-            <span data-hex="#4c566a" class="highlighted color-element nord3"></span>
-          </div>
-          <span>Snow Storm</span>
-          <div class="snow">
-            <span data-hex="#d8dee9" class="highlighted color-element nord4"></span>
-            <span data-hex="#e5e9f0" class="highlighted color-element nord5"></span>
-            <span data-hex="#eceff4" class="highlighted color-element nord6"></span>
-          </div>
-          <span>Frost</span>
-          <div class="frost">
-            <span data-hex="#8fbcbb" class="highlighted color-element nord7"></span>
-            <span data-hex="#88c0d0" class="highlighted color-element nord8"></span>
-            <span data-hex="#81a1c1" class="highlighted color-element nord9"></span>
-            <span data-hex="#5e81ac" class="highlighted color-element nord10"></span>
-          </div>
-          <span>Aurora</span>
-          <div class="aurora">
-            <span data-hex="#bf616a" class="highlighted color-element nord11"></span>
-            <span data-hex="#d08770" class="highlighted color-element nord12"></span>
-            <span data-hex="#ebcb8b" class="highlighted color-element nord13"></span>
-            <span data-hex="#a3be8c" class="highlighted color-element nord14"></span>
-            <span data-hex="#b48ead" class="highlighted color-element nord15"></span>
+          <div class="palette-colors">
+             <span v-for="color in palette.colors" :key="color" :style="{ backgroundColor: color }" class="color-box"></span>
           </div>
         </div>
-        <h3>Params</h3>
+        
+        <div class="palette" v-else>
+          <span>Nord (Default)</span>
+          <div class="palette-colors">
+             <span style="background-color: #2e3440" class="color-box"></span>
+             <span style="background-color: #88c0d0" class="color-box"></span>
+             <span style="background-color: #bf616a" class="color-box"></span>
+             <span style="background-color: #ebcb8b" class="color-box"></span>
+          </div>
+        </div>
+
+        <h3>Settings</h3>
         <div class="options">
-          <div class="just-filter space-between">
-            <span>
-              Filtering<br/>
-              <small>Change just the image palette</small>
-            </span>
+          
+          <div class="option-row">
+            <span>Filtering <small>(Keep brightness)</small></span>
             <label class="switch">
-              <input type="checkbox" v-model="is_filter" :checked="is_filter === true">
+              <input type="checkbox" v-model="is_filter">
               <span class="slider round"></span>
             </label>
           </div>
-          <div class="blur space-between">
-            <span>
-              Blur<br/>
-              <small>Apply a blur on output</small>
-            </span>
+
+          <div class="option-row">
+            <span>Blur <small>(Soften edges)</small></span>
             <label class="switch">
-              <input type="checkbox" v-model="blur" :checked="blur === true">
+              <input type="checkbox" v-model="blur">
               <span class="slider round"></span>
             </label>
           </div>
-          <div class="ai space-between">
-            <span>
-              AI<br/>
-              <small>Use AI on output</small>
-            </span>
-            <label class="switch">
-              <input type="checkbox" v-model="ai" :checked="ai === true">
-              <span class="slider round"></span>
-            </label>
+
+          <div class="actions">
+            <button @click="processImage" class="btn btn-primary" :disabled="isProcessing || !imgData">
+              {{ isProcessing ? 'Processing...' : 'Process Image' }}
+            </button>
+
+            <a v-if="downloadUrl" :href="downloadUrl" download="converted-image.png" class="btn btn-success" target="_blank">
+              Download Result
+            </a>
           </div>
-          <div class="avg" v-if="!ai">
-            <p>
-              AVG pixel area<br/>
-              <small>Enable avg algorithm</small>
-            </p>
-            <input class="range-input" v-model="avg_index" :disabled="is_filter === true"
-              type="range" step="1" min="-5" max="5" value="0"
-            >
+
+          <div v-if="errorMessage" class="error-msg">
+            {{ errorMessage }}
           </div>
-          <div class="process-image">
-            <span @click="processImage" class="btn btn-primary">Process</span>
-          </div>
-          <div class="download-image">
-            <span class="btn btn-primary">Download</span>
-          </div>
-          <small>More info on
-            <router-link class="external-link-color" to="/documentation"> documentation
-            </router-link>
-          </small>
+
         </div>
       </div>
     </div>
@@ -105,11 +81,10 @@
 <script>
 import Vue from 'vue';
 import Loader from './Loader.vue';
-import CookieManager from '../utility/CookieManager';
 
 export default Vue.component('Demo', {
   props: {
-    selectedPalette: String,
+    selectedPalette: [String, Array], // Lehet string vagy tömb is
     isAi: Boolean,
   },
   components: {
@@ -117,255 +92,191 @@ export default Vue.component('Demo', {
   },
   data() {
     return {
-      apiUrl: '/v1',
+      apiUrl: '/v1', // A proxy miatt ez a jó cím
       img: null,
       imgData: null,
-      selectedColor: [],
+      isProcessing: false,
+      isDragover: false,
+      downloadUrl: null, // Itt tároljuk a letöltési linket
+      errorMessage: null,
+      
+      // Opciók
       blur: false,
       ai: this.isAi || false,
       is_filter: false,
       avg_index: 0,
-      palette: '',
+      palette: null,
     };
   },
   watch: {
-    selectedPalette(file) {
-      try {
-        // eslint-disable-next-line
-        this.palette = require(`../assets/${file}`);
-      } catch (e) {
-        // eslint-disable-next-line
-        this.palette = require('../assets/palettes/ai-palettes/6x-palette.json').find((p) => p.name === file);
+    // Figyeljük, ha a szülő (GoWild/ImagIA) megváltoztatja a palettát
+    selectedPalette: {
+      immediate: true,
+      handler(newVal) {
+        this.loadPalette(newVal);
       }
-    },
-    palette(p) {
-      this.selectedColor = p.colors;
-    },
+    }
   },
   methods: {
-    loadFile(event) {
-      const dropArea = document.querySelector('.preview-wrapper');
-      dropArea.classList.add('uploaded');
-
-      const [imgData] = event.target.files;
-      this.imgData = imgData;
-      this.isVideo = true;
-
-      if (event.target.files[0].type.indexOf('video') === -1) {
-        this.isVideo = false;
-        const canvas = document.getElementById('img-preview');
-        const ctx = document.getElementById('img-preview').getContext('2d');
-        canvas.width = canvas.parentNode.offsetWidth * 0.8;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const img = new Image();
-
-        img.onload = () => {
-          const ratio = img.width / img.height;
-          let newWidth = canvas.width;
-          let newHeight = newWidth / ratio;
-          if (newHeight > canvas.height) {
-            newHeight = canvas.height;
-            newWidth = newHeight * ratio;
-          }
-          this.img = img;
-          this.imgData = imgData;
-          ctx.drawImage(img, 0, 0, newWidth, newHeight);
-        };
-
-        img.src = URL.createObjectURL(event.target.files[0]);
-      }
+    loadPalette(paletteName) {
+        if (!paletteName || paletteName === '[]') return;
+        
+        try {
+            // Megpróbáljuk betölteni a JSON fájlt
+            // eslint-disable-next-line
+            this.palette = require(`../assets/palettes/${paletteName}`);
+        } catch (e) {
+            try {
+               // Ha nem találja a sima mappában, megnézzük az AI mappában
+               // eslint-disable-next-line
+               const aiPalettes = require('../assets/palettes/ai-palettes/6x-palette.json');
+               this.palette = aiPalettes.find((p) => p.name === paletteName); 
+            } catch (err) {
+                console.error("Palette not found:", paletteName);
+            }
+        }
     },
-    processImage(e) {
-      e.preventDefault();
-      const self = this;
+    
+    handleDrop(e) {
+        this.isDragover = false;
+        const files = e.dataTransfer.files;
+        if(files.length > 0) this.processFile(files[0]);
+    },
 
-      document.querySelector('.preview').classList.toggle('processing');
+    loadFile(event) {
+        const files = event.target.files;
+        if(files.length > 0) this.processFile(files[0]);
+    },
 
-      if (this.imgData === null) {
-        return false;
-      }
+    processFile(file) {
+        this.imgData = file;
+        this.downloadUrl = null; // Reset download
+        this.errorMessage = null;
 
-      // eslint-disable-next-line prefer-destructuring
-      const img = this.img;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                this.img = img;
+                this.drawCanvas(img);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    },
+
+    drawCanvas(img) {
+        const canvas = document.getElementById('img-preview');
+        const ctx = canvas.getContext('2d');
+        
+        // Méretezés
+        const ratio = img.width / img.height;
+        let newWidth = canvas.parentNode.offsetWidth * 0.9;
+        let newHeight = newWidth / ratio;
+        
+        if (newHeight > 450) {
+            newHeight = 450;
+            newWidth = newHeight * ratio;
+        }
+        
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+    },
+
+    processImage() {
+      if (!this.imgData) return;
+
+      this.isProcessing = true;
+      this.errorMessage = null;
+      this.downloadUrl = null;
+
       const endpoint = (this.is_filter === true) ? 'quantize' : 'convert-async';
-      const avgW = -1;
-      const avgH = 1;
-
       const formData = new FormData();
       formData.append('file', this.imgData);
       formData.append('b64_output', true);
-      formData.append('palette_name', this.palette.name);
-      formData.append('colors', this.selectedColor.filter((c) => c).join(','));
-
-      if (this.avg_index !== 0) {
-        formData.append('is_avg', true);
-
-        formData.append('avg_box_width', avgW - parseInt(Math.abs(this.avg_index), 10));
-        formData.append('avg_box_height', avgH + parseInt(Math.abs(this.avg_index), 10));
+      
+      // Paletta adatok összeállítása
+      if (this.palette) {
+          formData.append('palette_name', this.palette.name);
+          // Csak az érvényes színeket küldjük
+          const colors = this.palette.colors.filter(c => c).join(',');
+          formData.append('colors', colors);
+      } else {
+          // Default Nord színek, ha nincs kiválasztva semmi
+          formData.append('colors', '#2e3440,#88c0d0,#bf616a,#ebcb8b'); 
       }
 
-      if (this.blur === true) {
-        formData.append('blur', this.blur);
-      }
+      if (this.blur) formData.append('blur', true);
+      if (this.ai) formData.append('is_ai', true);
 
-      if (this.ai === true) {
-        formData.append('is_ai', this.ai);
-      }
-
+      // Kérés küldése
       fetch(`${this.apiUrl}/${endpoint}`, {
         method: 'POST',
         body: formData,
-      }).then((response) => {
-        if (endpoint === 'quantize') {
-          response.json().then((j) => {
-            self.showResponseImage(img, j);
-          });
-          return true;
-        }
-
-        response.text().then((jobId) => {
-          self.pollingAPI(jobId, img);
-        });
-        return true;
-      }).catch(() => {
-        document.querySelector('.preview').classList.toggle('processing');
+      })
+      .then(res => {
+          if(!res.ok) throw new Error('Server error');
+          return endpoint === 'quantize' ? res.json() : res.text();
+      })
+      .then(data => {
+          if (endpoint === 'quantize') {
+              // Azonnali eredmény
+              this.handleSuccess(data.b64_img);
+          } else {
+              // Async job (jobId-t kapunk)
+              this.pollJob(data);
+          }
+      })
+      .catch(err => {
+          console.error(err);
+          this.errorMessage = "Error processing image. Check console.";
+          this.isProcessing = false;
       });
-
-      return true;
     },
-    pollingAPI(jobId, img) {
-      const self = this;
-      fetch(`${this.apiUrl}/get-job?job_id=${jobId}`)
-        .then((r) => {
-          const rClone = r.clone();
-          r.json().then((jsonResponse) => {
-            if (jsonResponse.status === 'finished') {
-              self.showResponseImage(img, jsonResponse.result);
-            } else if (jsonResponse.status === 'queued' || jsonResponse.status === 'started') {
-              setTimeout(() => {
-                self.pollingAPI(jobId);
-              }, 8000);
-            } else {
-              document.querySelector('.preview').classList.toggle('processing');
-              console.info('Something went wrong, please retry or write to us!');
-            }
-          }).catch(() => {
-            if (self.isVideo) {
-              rClone.blob().then((blob) => {
-                const newBlob = new Blob([blob]);
-                const blobUrl = window.URL.createObjectURL(newBlob);
-                const link = document.createElement('a');
-                link.href = blobUrl;
-                link.setAttribute('download', 'converted-video.mp4');
-                document.body.appendChild(link);
-                link.click();
-                link.parentNode.removeChild(link);
 
-                window.URL.revokeObjectURL(blobUrl);
-              });
-            }
-          });
-        });
+    pollJob(jobId) {
+        const check = () => {
+            fetch(`${this.apiUrl}/get-job?job_id=${jobId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'finished') {
+                        this.handleSuccess(data.result.b64_img);
+                    } else if (data.status === 'failed') {
+                        this.errorMessage = "Processing failed on server.";
+                        this.isProcessing = false;
+                    } else {
+                        // Még fut, újrapróbáljuk 2 mp múlva
+                        setTimeout(check, 2000);
+                    }
+                })
+                .catch(() => {
+                    this.errorMessage = "Connection lost.";
+                    this.isProcessing = false;
+                });
+        };
+        check();
     },
-    showResponseImage(img, r) {
-      const self = this;
-      const im = new Image();
-      im.onload = () => {
-        const conversionCount = CookieManager.getCookie('conversion-counter') || 0;
-        CookieManager.setCookie('conversion-counter', parseInt(conversionCount, 10) + 1);
-        window.gtag('event', 'converted-image', {
-          event_category: 'converted-image',
-          event_label: (this.palette.name || 'Nordtheme'),
-          value: (this.palette.name || 'Nordtheme'),
-        });
-        document.querySelector('.preview').classList.toggle('processing');
 
+    handleSuccess(base64Img) {
+        // Eredmény megjelenítése a vásznon
+        const img = new Image();
+        img.onload = () => {
+            this.drawCanvas(img);
+            this.isProcessing = false;
+        };
+        img.src = `data:image/png;base64,${base64Img}`;
         
-
-        const canvas = document.getElementById('img-preview');
-        const ctx = document.getElementById('img-preview').getContext('2d');
-        const ratio = self.img.width / self.img.height;
-        let newWidth = canvas.width;
-        let newHeight = newWidth / ratio;
-        if (newHeight > canvas.height) {
-          newHeight = canvas.height;
-          newWidth = newHeight * ratio;
+        // Blob link létrehozása a letöltéshez
+        const byteCharacters = atob(base64Img);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(im, 0, 0, newWidth, newHeight);
-      };
-      im.src = `data:image/png;base64, ${r.b64_img}`;
-      const responseImageBlob = this.b64ToBlob(r.b64_img);
-      const responseImageUrl = URL.createObjectURL(responseImageBlob);
-      const downloadBtn = document.querySelector('.download-image .btn');
-      downloadBtn.parentNode.style.display = 'block';
-      downloadBtn.setAttribute('onclick', `window.open('${responseImageUrl}', '_blank')`);
-    },
-    preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    highlightDroparea() {
-      const dropArea = document.querySelector('.preview-wrapper').parentNode;
-      dropArea.classList.toggle('highlight');
-    },
-    unhighlightDroparea() {
-      const dropArea = document.querySelector('.preview-wrapper').parentNode;
-      dropArea.classList.toggle('highlight');
-    },
-    handleDroparea(e) {
-      const dt = { target: e.dataTransfer };
-      this.loadFile(dt);
-    },
-    toggleSelectedColors(e) {
-      e.preventDefault();
-      e.target.classList.toggle('highlighted');
-      delete this.selectedColor[this.selectedColor.indexOf(e.target.getAttribute('data-hex'))];
-    },
-    b64ToBlob(b64Data, contentType = 'image/png', sliceSize = 512) {
-      const byteCharacters = atob(b64Data);
-      const byteArrays = [];
-
-      for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-        const slice = byteCharacters.slice(offset, offset + sliceSize);
-
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i += 1) {
-          byteNumbers[i] = slice.charCodeAt(i);
-        }
-
         const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
-      }
-
-      const blob = new Blob(byteArrays, { type: contentType });
-      return blob;
-    },
-  },
-  mounted() {
-    // eslint-disable-next-line
-    this.$nextTick(function () {
-      const dropArea = document.querySelector('.preview-wrapper');
-
-      dropArea.addEventListener('dragenter', this.preventDefaults);
-      dropArea.addEventListener('dragover', this.preventDefaults);
-      dropArea.addEventListener('dragleave', this.preventDefaults);
-      dropArea.addEventListener('drop', this.preventDefaults);
-
-      dropArea.addEventListener('dragenter', this.highlightDroparea);
-      dropArea.addEventListener('dragover', this.highlightDroparea);
-
-      dropArea.addEventListener('dragleave', this.unhighlightDroparea);
-      dropArea.addEventListener('drop', this.unhighlightDroparea);
-
-      dropArea.addEventListener('drop', this.handleDroparea);
-
-      const colorElements = document.querySelectorAll('.color-element');
-      for (let i = 0; i < colorElements.length; i += 1) {
-        this.selectedColor.push(colorElements[i].getAttribute('data-hex'));
-        colorElements[i].addEventListener('click', this.toggleSelectedColors);
-      }
-    });
+        const blob = new Blob([byteArray], {type: 'image/png'});
+        this.downloadUrl = URL.createObjectURL(blob);
+    }
   },
 });
 </script>
@@ -373,242 +284,141 @@ export default Vue.component('Demo', {
 <style scoped lang="scss">
 
 .demo {
-  padding: 8em 0;
+  padding: 2em 0;
 
   .demo-wrapper {
-    justify-items: center;
-    margin-bottom: 5em;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2em;
 
     .preview {
-      // width: 100%;
       position: relative;
-      padding: .8em;
+      padding: 1em;
       background: $bg-secondary;
-      border-radius: .8em;
+      border-radius: 8px;
+      min-width: 300px;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
       &.highlight {
-        background: $nord7;
+        border: 2px dashed $nord10;
       }
 
-      &.processing {
-        &:before {
-          content: " ";
-          position: absolute;
-          top: 0;
-          left: 0;
-          display: block;
-          width: 100%;
-          height: 100%;
-          background: #e5e9f087;
-          z-index: 1;
-        }
+      &.processing::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255,255,255,0.7);
+        z-index: 5;
       }
 
       .preview-wrapper {
-        position: relative;
-        background: $nord5;
-
+        width: 100%;
+        text-align: center;
+        
         label {
-          width: 100%;
-          height: 100%;
-          position: absolute;
-          cursor: pointer;
+            display: block;
+            width: 100%;
+            height: 300px;
+            border: 2px dashed #ccc;
+            cursor: pointer;
+            position: absolute;
+            top:0; left:0;
+            
+            &::after {
+                content: 'Click or Drop Image Here';
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                color: $nord3;
+                font-size: 1.2em;
+            }
         }
-
-        &:before {
-          content: 'Drop image here';
-          font-size: 2em;
-          color: #999;
-          opacity: .7;
-          position: absolute;
-          left: 50%;
-          margin-left: -4em;
-          margin-top: 9rem;
-        }
-
-        &.uploaded:before {
-          display: none;
-        }
-
-        #img-preview {
-          width: 90%;
-          max-height: 65vh;
+        
+        &.uploaded label {
+            display: none; /* Ha van kép, elrejtjük a dropzone-t */
         }
       }
     }
 
     .params {
-      // width: 100%;
+      width: 100%;
+      max-width: 400px;
       padding: 0 1em;
+      text-align: left;
 
       h3 {
-        margin-top: 0;
-        margin-bottom: .3em;
-        font-size: 1.6em;
-
-        &:nth-of-type(2) {
-          margin-top: .5em;
-        }
+        margin-bottom: 0.5em;
+        border-bottom: 2px solid $nord4;
+        padding-bottom: 5px;
       }
-
-      .download-image {
-        display: none;
-      }
-
-      .process-image, .download-image {
-        margin-top: .5em;
-
-        .btn {
-          text-align: center;
-          margin: auto;
-          display: block;
-        }
-      }
-
-      .palette {
-        .polar, .snow, .frost, .aurora {
-          span {
-            width: 1.5em;
-            height: 1.5em;
-            display: inline-block;
-            border: 2px solid #f2f2f2;
-            cursor: pointer;
-            margin: 0 .3em;
-
-            &:first-child {
-              margin-left: 0;
-            }
-
-            &:hover {
-              border: 2px solid $nord13;
-            }
-
-            &.highlighted {
-              border: 2px solid $nord13;
-
-              &:hover {
-                border-color: #f2f2f2;
-              }
-            }
+      
+      .palette-colors {
+          display: flex;
+          gap: 5px;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+          
+          .color-box {
+              width: 30px; 
+              height: 30px; 
+              border-radius: 4px;
+              border: 1px solid #ccc;
           }
-        }
-
-        // TODO: map-values
-        .nord0 {
-          background: $nord0;
-        }
-
-        .nord1 {
-          background: $nord1;
-        }
-
-        .nord2 {
-          background: $nord2;
-        }
-
-        .nord3 {
-          background: $nord3;
-        }
-
-        .nord4 {
-          background: $nord4;
-        }
-
-        .nord5 {
-          background: $nord5;
-        }
-
-        .nord6 {
-          background: $nord6;
-        }
-
-        .nord7 {
-          background: $nord7;
-        }
-
-        .nord8 {
-          background: $nord8;
-        }
-
-        .nord9 {
-          background: $nord9;
-        }
-
-        .nord10 {
-          background: $nord10;
-        }
-
-        .nord11 {
-          background: $nord11;
-        }
-
-        .nord12 {
-          background: $nord12;
-        }
-
-        .nord13 {
-          background: $nord13;
-        }
-
-        .nord14 {
-          background: $nord14;
-        }
-
-        .nord15 {
-          background: $nord15;
-        }
       }
 
-      .space-between {
+      .option-row {
         display: flex;
-        padding: .6em 0;
         justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1em;
       }
 
-      .avg {
-        padding: .6em 0;
-      }
-    }
-  }
-}
-
-@media (min-width: 56.25em) {
-  .demo {
-    .demo-wrapper {
-      display: flex;
-      align-items: center;
-      .preview {
-        width: 80%;
-        padding: .8em;
-
-        .preview-wrapper {
-          &:before {
-            margin-top: 8em;
-          }
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+        
+        .btn {
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            
+            &.btn-primary { background-color: $nord10; color: white; }
+            &.btn-success { background-color: $nord14; color: $nord0; }
+            
+            &:disabled {
+                background-color: #ccc;
+                cursor: not-allowed;
+            }
         }
       }
-
-      .params {
-        width: 20%;
+      
+      .error-msg {
+          color: $nord11;
+          margin-top: 10px;
+          text-align: center;
+          font-weight: bold;
       }
     }
   }
 }
 
+/* Sötét mód */
 .#{$dark-mode-class} {
-  .demo {
-    .demo-wrapper {
-      .preview {
-        background: $dark-bg-secondary;
-        .preview-wrapper {
-          background: $nord2;
-
-          &:before {
-            color: $dark-text-primary;
-          }
-        }
-      }
-    }
+  .preview {
+    background: $dark-bg-secondary;
   }
+  .actions .btn-success { color: white; }
+  h3 { border-color: $nord2; color: $nord6; }
 }
 </style>
