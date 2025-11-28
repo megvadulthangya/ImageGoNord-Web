@@ -183,14 +183,23 @@ export default Vue.component('Demo', {
             return;
         }
         
+        // --- JAVÍTÁS KEZDETE ---
+        // Kitisztítjuk a nevet: ha benne van a "palettes/", kivágjuk belőle
+        let cleanName = paletteName;
+        if (cleanName.includes('palettes/')) {
+            cleanName = cleanName.replace('palettes/', '');
+        }
+        // --- JAVÍTÁS VÉGE ---
+        
         try {
             // eslint-disable-next-line
-            this.palette = require(`../assets/palettes/${paletteName}`);
+            this.palette = require(`../assets/palettes/${cleanName}`); // Itt már a tiszta nevet használjuk
             if(this.palette && this.palette.colors) {
                 this.activeColors = [...this.palette.colors];
             }
         } catch (e) {
             try {
+               // Ha nem találja a sima mappában, megnézzük az AI mappában
                // eslint-disable-next-line
                const aiPalettes = require('../assets/palettes/ai-palettes/6x-palette.json');
                this.palette = aiPalettes.find((p) => p.name === paletteName); 
@@ -198,7 +207,7 @@ export default Vue.component('Demo', {
                    this.activeColors = [...this.palette.colors];
                }
             } catch (err) { 
-                console.error("Palette not found, falling back to Nord");
+                console.error("Palette not found, falling back to Nord:", cleanName);
                 this.selectAllNordColors();
             }
         }
