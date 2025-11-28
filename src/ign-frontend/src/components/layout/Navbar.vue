@@ -1,30 +1,31 @@
 <template>
   <header class="container">
     <div class="inner-header-container">
+      
       <div class="logo">
         <router-link to="/">
-          <img alt="SH logo" width="36" src="../../assets/logo-64.png">
-          <span>S<i class="title-part-1">chrödinger</i> H<i class="title-part-2">at</i></span>
+          <img alt="Logo" width="36" src="../../assets/logo-64.png">
+          <span>ImageGoNord</span>
         </router-link>
       </div>
+
       <nav>
         <div class="navbar">
           <router-link to="/imagia">🤖 ImagIA</router-link>
-          <router-link to="/installation">Installation</router-link>
           <router-link to="/documentation">Documentation</router-link>
           <router-link to="/color-schemes">ImageGoWild</router-link>
           <router-link to="/wallpaper">Wallpaper</router-link>
           <router-link to="/about">About</router-link>
-          <a target="_blank" href="https://opencollective.com/schrodinger-hat">
-            <i class="fas fa-donate mobile-menu-icon"></i>
-          </a>
-          <a href="https://github.com/Schroedinger-Hat/ImageGoNord-web" target="_blank">
+          
+          <a href="https://github.com/megvadulthangya/ImageGoNord-Web" target="_blank" title="GitHub">
             <i class="mobile-menu-icon fab fa-github"></i>
           </a>
-          <a @click="toggleMobileMenu" href="#">
+
+          <a @click="toggleMobileMenu" href="#" class="hamburger-icon">
             <i class="mobile-menu-icon fas fa-hamburger"></i>
           </a>
-          <a @click="toggleDarkMode" href="#">
+
+          <a @click="toggleDarkMode" href="#" title="Dark Mode">
             <i class="dark-mode-icon fas fa-moon"></i>
           </a>
         </div>
@@ -45,7 +46,8 @@ export default Vue.component('Navbar', {
   },
   mounted() {
     if (localStorage.getItem('darkMode') === 'yes') {
-      document.querySelector('.dark-mode-icon').parentNode.click();
+      const icon = document.querySelector('.dark-mode-icon');
+      if(icon) icon.parentNode.click();
     }
   },
   methods: {
@@ -58,13 +60,17 @@ export default Vue.component('Navbar', {
       event.preventDefault();
       document.body.parentNode.classList.toggle('dark-theme');
       let iconElement = event.target;
-      iconElement = (iconElement.tagName === 'A') ? iconElement.children[0] : iconElement;
+      // Biztonsági ellenőrzés, ha az A tagre kattint, ne dobjon hibát
+      if (iconElement.tagName === 'A') {
+          iconElement = iconElement.querySelector('i');
+      }
 
       let darkModeValue = 'yes';
-      darkModeValue = (localStorage.getItem('darkMode') === 'yes' && iconElement.className.indexOf('fa-sun') !== -1) ? 'no' : 'yes';
-
-      iconElement.classList.toggle('fa-moon');
-      iconElement.classList.toggle('fa-sun');
+      if (iconElement) {
+          darkModeValue = (localStorage.getItem('darkMode') === 'yes' && iconElement.className.indexOf('fa-sun') !== -1) ? 'no' : 'yes';
+          iconElement.classList.toggle('fa-moon');
+          iconElement.classList.toggle('fa-sun');
+      }
 
       localStorage.setItem('darkMode', darkModeValue);
     },
@@ -72,8 +78,6 @@ export default Vue.component('Navbar', {
 });
 </script>
 
-<!-- La navbar potrebbe essere un componente a sè, per maggior leggibilità -->
-<!-- Il logo potrebbe essere un componente a sè -->
 <style scoped lang="scss">
 
 header {
@@ -87,50 +91,27 @@ header {
   .inner-header-container {
     width: 100%;
     display: flex;
-    -webkit-box-align: center;
     align-items: center;
-    -webkit-box-pack: justify;
     justify-content: space-between;
     margin: 0px auto;
     padding: 0 .5em;
 
     .logo {
       display: flex;
-      -webkit-box-align: center;
       align-items: center;
+
+      a {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: inherit;
+      }
 
       span {
         font-size: 1.8em;
         font-weight: 600;
         margin-left: 0.3em;
         vertical-align: super;
-        transition: opacity 200ms ease-in-out 0s;
-
-        i {
-          position: absolute;
-          z-index: -1;
-          opacity: 0;
-          transition: all 300ms ease-in-out 0s;
-        }
-
-        .title-part-1 {
-          margin-left: -90px;
-        }
-
-        .title-part-2 {
-          margin-left: 90px;
-        }
-
-        &:hover {
-          i {
-            position: relative;
-            z-index: 0;
-            opacity: 1;
-            font-style: normal;
-            margin-left: 0;
-            transition: all 300ms ease-in-out 0s;
-          }
-        }
       }
     }
 
@@ -139,8 +120,9 @@ header {
 
       .navbar {
         list-style: none;
-        -webkit-box-pack: justify;
+        display: flex;
         justify-content: space-between;
+        align-items: center;
 
         a {
           border-radius: 0.25em;
@@ -149,8 +131,12 @@ header {
           transition: background-color 100ms ease-in-out 0s;
           cursor: pointer;
           font-size: 1.2em;
+          text-decoration: none;
+          color: inherit;
 
-          &:nth-child(-n+5) {
+          /* MOBIL NÉZET: */
+          /* Az első 6 elem (szöveges linkek) elrejtése */
+          &:nth-child(-n+6) {
             display: none;
           }
 
@@ -163,24 +149,27 @@ header {
   }
 }
 
+/* DESKTOP NÉZET */
 @media (min-width: 56.25em) {
   header {
     .inner-header-container {
       padding: 0 0;
 
-      .logo {
-        span {
-          font-size: 2em;
-        }
+      .logo span {
+        font-size: 2em;
       }
 
       nav {
         .navbar {
           a {
-            &:nth-child(-n+7) {
+            /* Desktopon jelenjen meg a szöveges menü is */
+            &:nth-child(-n+6) {
               display: inline;
             }
-            &:nth-child(9) {
+            
+            /* A 8. elem (Hamburger) rejtése desktopon.
+               (6 link + 1 Github = 7. elem, a Hamburger a 8.) */
+            &:nth-child(8) {
               display: none;
             }
           }

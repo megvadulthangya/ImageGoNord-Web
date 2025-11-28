@@ -280,9 +280,7 @@ export default Vue.component('Demo', {
         });
         document.querySelector('.preview').classList.toggle('processing');
 
-        if (conversionCount === 0 || conversionCount % 3 === 0) {
-          document.querySelector('.modal-window').classList.toggle('modal-window__active');
-        }
+        
 
         const canvas = document.getElementById('img-preview');
         const ctx = document.getElementById('img-preview').getContext('2d');

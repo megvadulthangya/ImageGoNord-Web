@@ -2,26 +2,26 @@
   <div class="about container">
     <Main
         h1="About"
-        h2="Who are we and why this project?"
+        h2="Self-Hosted Image Converter"
       />
+      
       <div class="description">
         <p>
-          We are in love with <a href="https://www.nordtheme.com/" class="external-link-color" target="_blank">Nordtheme</a>, by Artic Studio.
-          One big problem that we had was searching hard for icons, wallpapers,
-          profile picture created in the nord palette.
-          These resources are not existing or they are unsearchable.
+          This is a private, self-hosted instance of the ImageGoNord tool running on Manjaro Linux.
           <br/><br/>
-          In order to solve this problem we wanted to create a tool,
-          not graphic, to convert images in the north palette.
+          It allows for fast image conversion using the Nord palette (and others) directly on this server, 
+          ensuring privacy and performance.
           <br/><br/>
-          We are hoping that this project can bring tons
-          of nord resources on the web in a free-to-use license.
-          <br/><br/>
-          Authors: <a class="external-link-color" href="https://github.com/TheJoin95" target="_blank">@thejoin</a> and <a class="external-link-color" href="https://github.com/Wabri" target="_blank">@wabri</a>
+          Modified Source Code:
+          <br/>
+          <a class="external-link-color" href="https://github.com/megvadulthangya/ImageGoNord-Web" target="_blank">
+            github.com/megvadulthangya/ImageGoNord-Web
+          </a>
         </p>
       </div>
   </div>
 </template>
+
 <script>
 import Main from '@/components/Main.vue';
 
@@ -41,6 +41,7 @@ export default {
     padding: 0 .5em;
     p {
       font-size: 1.4em;
+      line-height: 1.6;
     }
   }
 }
