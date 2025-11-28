@@ -12,7 +12,7 @@
                  @dragover.prevent="isDragover = true" 
                  @dragleave.prevent="isDragover = false"
                  @drop.prevent="handleDrop">
-                 </label>
+          </label>
 
           <canvas width="450" height="450" id="img-preview"></canvas>
         </div>
@@ -194,7 +194,9 @@ export default Vue.component('Demo', {
         if(event.target.files.length > 0) this.processFile(event.target.files[0]);
     },
     processFile(file) {
-        this.imgData = file; this.downloadUrl = null; this.errorMessage = null;
+        this.imgData = file;
+        this.downloadUrl = null;
+        this.errorMessage = null;
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
@@ -241,7 +243,7 @@ export default Vue.component('Demo', {
       })
       .catch(err => {
           console.error(err);
-          this.errorMessage = "Error processing. Try a smaller image.";
+          this.errorMessage = "Error processing. The image might be too large.";
           this.isProcessing = false;
       });
     },
@@ -278,14 +280,14 @@ export default Vue.component('Demo', {
 <style scoped lang="scss">
 .demo {
   padding: 2em 0;
-  /* Margó az alján, hogy ne takarja ki a hullám */
   padding-bottom: 200px !important; 
 
   .demo-wrapper {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Mobilon törje a sort */
     justify-content: center;
-    gap: 2em;
+    align-items: flex-start; /* Felülre igazítás */
+    gap: 3em; /* Térköz a bal és jobb oldal között */
     
     /* BAL OLDAL (KÉP) */
     .preview {
@@ -293,8 +295,10 @@ export default Vue.component('Demo', {
       padding: 1em;
       background: $bg-secondary;
       border-radius: 8px;
-      min-width: 300px;
-      min-height: 300px;
+      /* Rugalmas szélesség */
+      width: 100%;
+      max-width: 500px;
+      min-height: 350px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -309,7 +313,6 @@ export default Vue.component('Demo', {
       .preview-wrapper {
         width: 100%; text-align: center;
         
-        /* A feltöltő terület stílusa */
         label {
             display: block; width: 100%; height: 300px; 
             border: 2px dashed #ccc; cursor: pointer; 
@@ -323,6 +326,9 @@ export default Vue.component('Demo', {
             }
         }
         &.uploaded label { display: none; }
+        
+        /* A vászon ne lógjon ki */
+        canvas { max-width: 100%; height: auto; border-radius: 4px; }
       }
     }
 
@@ -370,16 +376,25 @@ export default Vue.component('Demo', {
 
 /* Sötét mód */
 .#{$dark-mode-class} {
-  .preview { background: $dark-bg-secondary; }
+  .preview { background: $dark-bg-secondary; border-color: $nord2; }
   
+  /* Feltöltő doboz kerete sötét módban */
   .preview-wrapper label {
-      border-color: $nord3 !important;
+      border-color: $nord3 !important; 
       &::after { color: $nord4; }
+  }
+  
+  /* Csúszkák háttere sötét módban, hogy látható legyen */
+  .slider {
+      background-color: $nord3; 
   }
   
   .actions .btn-success { color: white; }
   h3 { border-color: $nord2; color: $nord6; }
+  .palette-colors .color-box { border-color: #555; }
   .group-name { color: $nord4; }
+  
+  /* Szövegek láthatósága sötét módban */
   .options span { color: $nord4; }
 }
 </style>
