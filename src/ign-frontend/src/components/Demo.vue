@@ -12,7 +12,8 @@
                  @dragover.prevent="isDragover = true" 
                  @dragleave.prevent="isDragover = false"
                  @drop.prevent="handleDrop">
-          </label>
+                 </label>
+
           <canvas width="450" height="450" id="img-preview"></canvas>
         </div>
       </div>
@@ -49,6 +50,7 @@
 
         <h3>Settings</h3>
         <div class="options">
+          
           <div class="option-row">
             <span>Filtering <br><small>Change just the image palette</small></span>
             <label class="switch">
@@ -80,9 +82,8 @@
 
             <div v-if="downloadUrl" class="result-actions">
                 <a :href="downloadUrl" :download="`ign-result-${Date.now()}.png`" class="btn btn-success" target="_blank">
-				  Download
-				</a>
-				
+                  Download
+                </a>
                 <button @click="resetImage" class="btn btn-warning">
                   New Image
                 </button>
@@ -135,96 +136,56 @@ export default Vue.component('Demo', {
     };
   },
   watch: {
-    // JAVÍTVA: Mélyebb figyelés a prop változására
     selectedPalette: {
       immediate: true,
-      handler(newVal) {
-        console.log("Palette changed to:", newVal); // Debug
-        this.loadPalette(newVal);
-      }
+      handler(newVal) { this.loadPalette(newVal); }
     }
   },
   mounted() {
-      // Ha induláskor nincs paletta, betöltjük a defaultot
-      if (!this.palette) {
-          this.selectAllNordColors();
-      }
+      if (!this.palette) { this.selectAllNordColors(); }
   },
   methods: {
-    // Törli a képet és visszaáll alaphelyzetbe
     resetImage() {
-        this.imgData = null;
-        this.img = null;
-        this.downloadUrl = null;
-        this.errorMessage = null;
-        // Canvas törlése
+        this.imgData = null; this.img = null; this.downloadUrl = null; this.errorMessage = null;
         const canvas = document.getElementById('img-preview');
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Input fájl mező ürítése
-        if (this.$refs.fileInput) {
-            this.$refs.fileInput.value = '';
-        }
+        if (this.$refs.fileInput) { this.$refs.fileInput.value = ''; }
     },
-
     selectAllNordColors() {
         this.activeColors = [];
-        Object.values(this.nordPalettes).forEach(colors => {
-            this.activeColors.push(...colors);
-        });
+        Object.values(this.nordPalettes).forEach(colors => { this.activeColors.push(...colors); });
     },
-
     loadPalette(paletteName) {
         this.activeColors = [];
         this.palette = null;
-
-        if (!paletteName || paletteName === '[]' || paletteName === '') {
-            this.selectAllNordColors();
-            return;
-        }
+        if (!paletteName || paletteName === '[]' || paletteName === '') { this.selectAllNordColors(); return; }
         
-        // --- JAVÍTÁS KEZDETE ---
-        // Kitisztítjuk a nevet: ha benne van a "palettes/", kivágjuk belőle
+        // Név tisztítás (dupla mappa javítás)
         let cleanName = paletteName;
-        if (cleanName.includes('palettes/')) {
-            cleanName = cleanName.replace('palettes/', '');
-        }
-        // --- JAVÍTÁS VÉGE ---
-        
+        if (cleanName.includes('palettes/')) { cleanName = cleanName.replace('palettes/', ''); }
+
         try {
             // eslint-disable-next-line
-            this.palette = require(`../assets/palettes/${cleanName}`); // Itt már a tiszta nevet használjuk
-            if(this.palette && this.palette.colors) {
-                this.activeColors = [...this.palette.colors];
-            }
+            this.palette = require(`../assets/palettes/${cleanName}`);
+            if(this.palette && this.palette.colors) { this.activeColors = [...this.palette.colors]; }
         } catch (e) {
             try {
-               // Ha nem találja a sima mappában, megnézzük az AI mappában
                // eslint-disable-next-line
                const aiPalettes = require('../assets/palettes/ai-palettes/6x-palette.json');
                this.palette = aiPalettes.find((p) => p.name === paletteName); 
-               if(this.palette && this.palette.colors) {
-                   this.activeColors = [...this.palette.colors];
-               }
+               if(this.palette && this.palette.colors) { this.activeColors = [...this.palette.colors]; }
             } catch (err) { 
-                console.error("Palette not found, falling back to Nord:", cleanName);
+                console.error("Palette not found, falling back to Nord");
                 this.selectAllNordColors();
             }
         }
     },
-    
     toggleColor(hex) {
-        if (this.activeColors.includes(hex)) {
-            this.activeColors = this.activeColors.filter(c => c !== hex);
-        } else {
-            this.activeColors.push(hex);
-        }
+        if (this.activeColors.includes(hex)) { this.activeColors = this.activeColors.filter(c => c !== hex); } 
+        else { this.activeColors.push(hex); }
     },
-    
-    isColorSelected(hex) {
-        return this.activeColors.includes(hex);
-    },
-
+    isColorSelected(hex) { return this.activeColors.includes(hex); },
     handleDrop(e) {
         this.isDragover = false;
         if(e.dataTransfer.files.length > 0) this.processFile(e.dataTransfer.files[0]);
@@ -233,9 +194,7 @@ export default Vue.component('Demo', {
         if(event.target.files.length > 0) this.processFile(event.target.files[0]);
     },
     processFile(file) {
-        this.imgData = file;
-        this.downloadUrl = null;
-        this.errorMessage = null;
+        this.imgData = file; this.downloadUrl = null; this.errorMessage = null;
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
@@ -257,27 +216,17 @@ export default Vue.component('Demo', {
     },
     processImage() {
       if (!this.imgData) return;
-      if (this.activeColors.length === 0) {
-          this.errorMessage = "Please select at least one color!";
-          return;
-      }
+      if (this.activeColors.length === 0) { this.errorMessage = "Please select at least one color!"; return; }
 
-      this.isProcessing = true;
-      this.errorMessage = null;
-      this.downloadUrl = null;
+      this.isProcessing = true; this.errorMessage = null; this.downloadUrl = null;
 
       const endpoint = (this.is_filter === true) ? 'quantize' : 'convert-async';
       const formData = new FormData();
       formData.append('file', this.imgData);
       formData.append('b64_output', true);
-      
-      // KIVÁLASZTOTT SZÍNEK KÜLDÉSE
       formData.append('colors', this.activeColors.join(','));
       
-      if (this.palette && this.palette.name) {
-          formData.append('palette_name', this.palette.name);
-      }
-
+      if (this.palette && this.palette.name) { formData.append('palette_name', this.palette.name); }
       if (this.blur) formData.append('blur', true);
       if (this.ai) formData.append('is_ai', true);
 
@@ -292,7 +241,7 @@ export default Vue.component('Demo', {
       })
       .catch(err => {
           console.error(err);
-          this.errorMessage = "Error processing. The image might be too large or complex for AI.";
+          this.errorMessage = "Error processing. Try a smaller image.";
           this.isProcessing = false;
       });
     },
@@ -329,24 +278,61 @@ export default Vue.component('Demo', {
 <style scoped lang="scss">
 .demo {
   padding: 2em 0;
+  /* Margó az alján, hogy ne takarja ki a hullám */
   padding-bottom: 200px !important; 
 
   .demo-wrapper {
-    display: flex; flex-wrap: wrap; justify-content: center; gap: 2em;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2em;
     
+    /* BAL OLDAL (KÉP) */
     .preview {
-      position: relative; padding: 1em; background: $bg-secondary; border-radius: 8px; min-width: 300px; min-height: 300px; display: flex; align-items: center; justify-content: center; z-index: 100;
+      position: relative;
+      padding: 1em;
+      background: $bg-secondary;
+      border-radius: 8px;
+      min-width: 300px;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+
       &.highlight { border: 2px dashed $nord10; }
-      &.processing::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 5; }
+      &.processing::before {
+        content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255,255,255,0.7); z-index: 5;
+      }
+
       .preview-wrapper {
         width: 100%; text-align: center;
-        label { display: block; width: 100%; height: 300px; border: 2px dashed #ccc; cursor: pointer; position: absolute; top:0; left:0; &::after { content: 'Click or Drop Image Here'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: $nord3; font-size: 1.2em; } }
+        
+        /* A feltöltő terület stílusa */
+        label {
+            display: block; width: 100%; height: 300px; 
+            border: 2px dashed #ccc; cursor: pointer; 
+            position: absolute; top:0; left:0;
+            
+            &::after {
+                content: 'Click or Drop Image Here';
+                position: absolute; top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                color: $nord3; font-size: 1.2em;
+            }
+        }
         &.uploaded label { display: none; }
       }
     }
 
+    /* JOBB OLDAL (PARAMÉTEREK) */
     .params {
-      width: 100%; max-width: 400px; padding: 0 1em; text-align: left; position: relative; z-index: 100; 
+      width: 100%;
+      max-width: 400px;
+      padding: 0 1em;
+      text-align: left;
+      z-index: 50;
 
       h3 { margin-bottom: 0.5em; border-bottom: 2px solid $nord4; padding-bottom: 5px; }
       
@@ -356,7 +342,7 @@ export default Vue.component('Demo', {
       .palette-colors {
           display: flex; gap: 8px; margin-bottom: 5px; flex-wrap: wrap;
           .color-box { 
-              width: 35px; height: 35px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; transition: transform 0.1s; opacity: 0.3; /* Halvány ha inaktív */
+              width: 35px; height: 35px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; transition: transform 0.1s; opacity: 0.3; 
               &:hover { transform: scale(1.1); }
               &.selected { opacity: 1; border: 2px solid $nord10; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
           }
@@ -364,7 +350,8 @@ export default Vue.component('Demo', {
       .option-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; }
       
       .actions {
-        display: flex; flex-direction: column; gap: 10px; margin-top: 20px; position: relative; z-index: 20; 
+        display: flex; flex-direction: column; gap: 10px; margin-top: 20px;
+        position: relative; z-index: 20; 
         
         .result-actions { display: flex; gap: 10px; }
         
@@ -383,25 +370,16 @@ export default Vue.component('Demo', {
 
 /* Sötét mód */
 .#{$dark-mode-class} {
-  /* A külső doboz */
-  .preview { 
-    background: $dark-bg-secondary; 
+  .preview { background: $dark-bg-secondary; }
+  
+  .preview-wrapper label {
+      border-color: $nord3 !important;
+      &::after { color: $nord4; }
   }
   
-  /* A belső szaggatott keret és a label */
-  .preview-wrapper, .preview-wrapper label {
-      border-color: $nord3 !important; /* Sötét szürke keret */
-      color: $nord4;
-  }
-  
-  /* A "Click or Drop" szöveg */
-  .preview-wrapper label::after {
-      color: $nord4;
-  }
-
   .actions .btn-success { color: white; }
   h3 { border-color: $nord2; color: $nord6; }
-  .palette-colors .color-box { border-color: #555; }
   .group-name { color: $nord4; }
   .options span { color: $nord4; }
 }
+</style>
