@@ -79,9 +79,10 @@
             </button>
 
             <div v-if="downloadUrl" class="result-actions">
-                <a :href="downloadUrl" download="converted-image.png" class="btn btn-success" target="_blank">
-                  Download
-                </a>
+                <a :href="downloadUrl" :download="`ign-result-${Date.now()}.png`" class="btn btn-success" target="_blank">
+				  Download
+				</a>
+				
                 <button @click="resetImage" class="btn btn-warning">
                   New Image
                 </button>
