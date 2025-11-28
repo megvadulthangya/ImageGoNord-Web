@@ -18,19 +18,19 @@
         <p>Choose the target color scheme for the AI</p>
       </center>
       
-      <div class="palette-grid container">
+      <div class="palette-container container">
         <div 
-          @click="selectedPalette = palette.name" 
-          :class="{'palette-post': true, 'current-palette': (selectedPalette === palette.name)}" 
           v-for="palette in availablePalettes" 
           :key="palette.name"
+          @click="selectedPalette = palette.name" 
+          :class="{'palette-card': true, 'active': (selectedPalette === palette.name)}"
         >
-          <div class="palette-img" :style="generateGradient(palette.colors)"></div>
-          <span class="palette-title">{{ palette.name }}</span>
+          <div class="color-strip" :style="getGradientStyle(palette.colors)"></div>
+          <span class="palette-name">{{ palette.name }}</span>
         </div>
       </div>
 
-      <center style="margin-top: 2em;">
+      <center style="margin-top: 3em;">
         <h3>2. Upload Image</h3>
       </center>
       
@@ -57,16 +57,10 @@ export default {
     Main,
   },
   methods: {
-    // Kiszerveztem a csúnya HTML stílust egy függvénybe
-    generateGradient(colors) {
-      return `background: linear-gradient(to right, 
-        ${colors[0]} 16.65%, 
-        ${colors[1]} 16.65% 33.3%, 
-        ${colors[2]} 33.3% 49.95%, 
-        ${colors[3]} 49.95% 66.55%, 
-        ${colors[4]} 66.55% 83.2%, 
-        ${colors[5]} 83.2%
-      );`;
+    // JAVÍTVA: Nincsenek sortörések, egyetlen stringet ad vissza
+    getGradientStyle(colors) {
+      if (!colors || colors.length < 6) return 'background: #ccc'; // Fallback
+      return `background: linear-gradient(to right, ${colors[0]} 16.6%, ${colors[1]} 16.6% 33.3%, ${colors[2]} 33.3% 50%, ${colors[3]} 50% 66.6%, ${colors[4]} 66.6% 83.3%, ${colors[5]} 83.3%);`;
     }
   }
 };
@@ -74,7 +68,7 @@ export default {
 
 <style scoped lang="scss">
 .canvas-container {
-  margin-top: 1em; /* Kicsit feljebb húztuk */
+  margin-top: 1em;
   svg {
     margin-bottom: -5px;
     path:nth-of-type(1) { fill: $nord4; }
@@ -85,58 +79,62 @@ export default {
 .demo-section {
   min-height: 500px;
   background: $nord5;
-  margin-bottom: -5em; /* Kevésbé lóg bele a láblécbe */
-  margin-top: -1em;
-  padding: 2em 0; /* PADDING CSÖKKENTVE: 5em -> 2em (Kevesebb görgetés!) */
+  padding: 2em 0;
+  margin-bottom: -5em;
 
   h3 {
     font-size: 1.8em;
-    margin: .3em 0;
+    margin: .5em 0;
     color: $nord0;
   }
-
-  p {
-    margin: .3em 0;
-    color: $nord3;
-  }
   
-  /* Paletta rács stílusok (ha hiányoznának globálisan) */
-  .palette-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+  /* JAVÍTOTT RÁCS (GRID) RENDSZER */
+  .palette-container {
+    display: grid;
+    /* Automatikusan kitölti a teret, minimum 160px széles elemekkel */
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
     gap: 15px;
-    margin-top: 20px;
+    padding: 10px;
   }
 
-  .palette-post {
-    cursor: pointer;
-    border: 3px solid transparent;
+  .palette-card {
+    background: white;
     border-radius: 8px;
-    transition: transform 0.2s;
+    padding: 10px;
+    cursor: pointer;
     text-align: center;
-    
+    transition: all 0.2s ease-in-out;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+
     &:hover {
-      transform: scale(1.05);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    
-    &.current-palette {
-      border-color: $nord10; /* Kijelölés színe */
-      background-color: rgba(255,255,255,0.5);
+
+    &.active {
+      border-color: $nord10;
+      background-color: #f0f4f8;
     }
   }
 
-  .palette-img {
-    width: 150px;
+  .color-strip {
     height: 40px;
-    border-radius: 5px;
-    margin-bottom: 5px;
-    border: 1px solid #ccc;
+    width: 100%;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
   }
-  
-  .palette-title {
-    font-weight: bold;
+
+  .palette-name {
+    font-size: 0.9em;
+    font-weight: 600;
     color: $nord1;
+    display: block;
+    /* Hosszú nevek kezelése */
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -147,8 +145,17 @@ export default {
     h3 { color: $nord6; }
     p { color: $nord4; }
     
-    .palette-title { color: $nord4; }
-    .current-palette { background-color: $nord3; }
+    .palette-card {
+      background: $nord3;
+      color: $nord6;
+      
+      &.active {
+        background-color: $nord1;
+        border-color: $nord8;
+      }
+    }
+    
+    .palette-name { color: $nord6; }
   }
 
   .canvas-container {

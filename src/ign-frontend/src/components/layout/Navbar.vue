@@ -45,34 +45,51 @@ export default Vue.component('Navbar', {
     MobileMenu,
   },
   mounted() {
+    // Ha a felhasználó korábban bekapcsolta a sötét módot, kapcsoljuk be most is
     if (localStorage.getItem('darkMode') === 'yes') {
-      const icon = document.querySelector('.dark-mode-icon');
-      if(icon) icon.parentNode.click();
+      this.enableDarkMode(true);
     }
   },
   methods: {
-    toggleMobileMenu: (event) => {
-      event.preventDefault();
+    toggleMobileMenu(event) {
+      if (event) event.preventDefault();
       document.querySelector('.mobile-menu-container').classList.toggle('loaded');
       document.body.classList.toggle('overflow-hidden');
     },
-    toggleDarkMode: (event) => {
-      event.preventDefault();
-      document.body.parentNode.classList.toggle('dark-theme');
-      let iconElement = event.target;
-      // Biztonsági ellenőrzés, ha az A tagre kattint, ne dobjon hibát
-      if (iconElement.tagName === 'A') {
-          iconElement = iconElement.querySelector('i');
-      }
 
-      let darkModeValue = 'yes';
-      if (iconElement) {
-          darkModeValue = (localStorage.getItem('darkMode') === 'yes' && iconElement.className.indexOf('fa-sun') !== -1) ? 'no' : 'yes';
-          iconElement.classList.toggle('fa-moon');
-          iconElement.classList.toggle('fa-sun');
+    // Ez a SEGÉDFÜGGVÉNY kapcsolja a módot konkrétan
+    enableDarkMode(isDark) {
+      const icon = document.querySelector('.dark-mode-icon');
+      
+      if (isDark) {
+        // Sötét mód BE
+        document.documentElement.classList.add('dark-theme');
+        if (icon) {
+          icon.classList.remove('fa-moon'); // Hold le
+          icon.classList.add('fa-sun');     // Nap fel
+        }
+      } else {
+        // Sötét mód KI (Világos)
+        document.documentElement.classList.remove('dark-theme');
+        if (icon) {
+          icon.classList.add('fa-moon');    // Hold fel
+          icon.classList.remove('fa-sun');  // Nap le
+        }
       }
+    },
 
-      localStorage.setItem('darkMode', darkModeValue);
+    // Ez fut le kattintáskor
+    toggleDarkMode(event) {
+      if (event) event.preventDefault();
+      
+      // Megnézzük, most épp be van-e kapcsolva
+      const isCurrentlyDark = document.documentElement.classList.contains('dark-theme');
+      
+      // Fordítsunk rajta egyet (Ha sötét volt -> legyen világos, és fordítva)
+      const newState = !isCurrentlyDark;
+      
+      this.enableDarkMode(newState);
+      localStorage.setItem('darkMode', newState ? 'yes' : 'no');
     },
   },
 });

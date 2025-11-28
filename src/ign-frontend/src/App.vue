@@ -1,9 +1,7 @@
 <template>
   <div id="app">
-    <alert />
     <Navbar />
     <router-view />
-    <Contributing />
     <Footer />
   </div>
 </template>
@@ -14,17 +12,15 @@
 
 <script>
 import Navbar from '@/components/layout/Navbar.vue';
-import Contributing from '@/components/Contributing.vue';
 import Footer from '@/components/layout/Footer.vue';
-import Alert from './components/Alert.vue';
+/* Alert import TÖRÖLVE */
 
 export default {
   name: 'App',
   components: {
     Navbar,
-    Contributing,
     Footer,
-    Alert,
+    /* Alert komponens TÖRÖLVE */
   },
 };
 </script>
