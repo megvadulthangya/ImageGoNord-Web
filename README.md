@@ -27,8 +27,6 @@ You don't need to clone the code or build anything. Just use **Docker Compose**.
 2.  Paste the following configuration:
 
 ```yaml
-version: '3.8'
-
 services:
   # 1. FRONTEND (Weboldal)
   ign-frontend:
