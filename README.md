@@ -30,35 +30,53 @@ You don't need to clone the code or build anything. Just use **Docker Compose**.
 version: '3.8'
 
 services:
-  # 1. FRONTEND
+  # 1. FRONTEND (Weboldal)
   ign-frontend:
     image: megvadulthangya/ign-frontend:latest
-    container_name: ign-frontend
+    container_name: ign-frontend-custom
     ports:
       - "8085:80" # Access at http://localhost:8085
     depends_on:
-      - ign-api
-    # Disable auto-update to keep stability
+      - ign-api-custom
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
 
-  # 2. BACKEND (API)
-  ign-api:
+  # 2. API (Webszerver - Csak a kéréseket fogadja)
+  ign-api-custom:
     image: megvadulthangya/ign-api:latest
-    container_name: ign-api
+    container_name: ign-api-custom
     environment:
-      - REDISTOGO_URL=redis://ign-redis:6379/0 
+      - REDISTOGO_URL=redis://ign-redis-custom:6379/0 
     depends_on:
-      - ign-redis
+      - ign-redis-custom
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
 
-  # 3. DATABASE
-  ign-redis:
+  # 3. WORKER (Háttérmunkás - Ez végzi az AI számítást!)
+  ign-worker-custom:
+    image: megvadulthangya/ign-api:latest  # Ugyanazt a képet használja, mint az API
+    container_name: ign-worker-custom
+    # FONTOS: Felülírjuk az indító parancsot a workerre
+    command: /app/run-worker.sh 
+    environment:
+      - REDISTOGO_URL=redis://ign-redis-custom:6379/0 
+    depends_on:
+      - ign-redis-custom
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    # Újraindítási politika stabilitáshoz
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+    restart: unless-stopped 
+
+  # 4. ADATBÁZIS
+  ign-redis-custom:
     image: valkey/valkey:alpine
-    container_name: ign-redis
+    container_name: ign-redis-custom
     restart: unless-stopped
 
 networks:
