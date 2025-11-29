@@ -1,36 +1,47 @@
 services:
-  # 1. A FRONTEND (Ezt éred el a böngészőből)
+  # 1. FRONTEND (Helyi Build)
   ign-frontend:
     build: ./src/ign-frontend
     container_name: ign-frontend-custom
-    labels:
-      - "com.centurylinklabs.watchtower.enable=false"
     ports:
-      - "8085:80"  # A te géped 8085-ös portja -> Nginx 80-as portja
+      - "8085:80"
     depends_on:
       - ign-api-custom
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
 
-  # 2. A BACKEND (API)
+  # 2. API (Helyi Build - Webszerver)
   ign-api-custom:
     build: ./src/ign-api
     container_name: ign-api-custom
-    labels:
-      - "com.centurylinklabs.watchtower.enable=false"
     environment:
-      # Belső hálózaton éri el a Redist
       - REDISTOGO_URL=redis://ign-redis-custom:6379/0 
-    # NEM kell ports: - "..." rész! 
-    # Az Nginx eléri belül a 8000-es porton, kívülről nem kell látni.
     depends_on:
       - ign-redis-custom
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
 
-  # 3. AZ ADATBÁZIS (Redis/Valkey)
+  # 3. WORKER (Helyi Build - Háttérmunkás) - EZ AZ ÚJ ELEM!
+  ign-worker-custom:
+    build: ./src/ign-api  # Ugyanabból a forrásból építkezik, mint az API!
+    container_name: ign-worker-custom
+    # ITT A TRÜKK: Felülírjuk az indítást, hogy ne a web, hanem a worker induljon
+    command: /app/run-worker.sh 
+    environment:
+      - REDISTOGO_URL=redis://ign-redis-custom:6379/0 
+    depends_on:
+      - ign-redis-custom
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    # Ha kifogy a memóriából és leáll, a Docker újraindítja
+    restart: unless-stopped 
+
+  # 4. ADATBÁZIS
   ign-redis-custom:
     image: valkey/valkey:alpine
     container_name: ign-redis-custom
-    # Itt sem kell portot nyitni a külvilágra, csak az API használja.
     restart: unless-stopped
 
 networks:
